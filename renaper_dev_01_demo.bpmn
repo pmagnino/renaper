@@ -1,0 +1,417 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn2:definitions xmlns:bpmn2="http://www.omg.org/spec/BPMN/20100524/MODEL" exporter="Camunda Modeler" exporterVersion="5.0.0" id="_FXeIoKhnEeOC4LOKh_69JQ" targetNamespace="isv_customtasks" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:isv="http://ibm.com/bpmn/isv" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.omg.org/spec/BPMN/20100524/MODEL BPMN20.xsd">
+	<bpmn2:process camunda:historyTimeToLive="1" id="renaper_dev_01" isExecutable="true" isv:propertiesSchemaVersion="4.0" name="Renaper Dev 01">
+		<bpmn2:startEvent camunda:displayName="Start event" id="Event_0onayf9">
+			<bpmn2:outgoing>Flow_105nefq</bpmn2:outgoing>
+		</bpmn2:startEvent>
+		<bpmn2:endEvent camunda:displayName="End event" id="Event_0tf1ctn_customId">
+			<bpmn2:incoming>Flow_1vv04zs</bpmn2:incoming>
+			<bpmn2:incoming>Flow_0xwzjpu</bpmn2:incoming>
+			<bpmn2:incoming>Flow_1xdhgn5</bpmn2:incoming>
+		</bpmn2:endEvent>
+		<bpmn2:serviceTask camunda:class="com.ibm.security.access.workflow.camunda.customTaskListener.CustomRuleTask" id="isv_function_1758635546599_customId" name="Valida DNI y Tramite">
+			<bpmn2:extensionElements>
+				<isv:inputOutput>
+					<isv:inputParameter id="inputData" name="inputData">statements:
+
+- context: "sexo := ctx.userFormData.userData.sexo"
+- context: "dni := ctx.userFormData.userData.dni"
+- context: "id_tramite := ctx.userFormData.userData.dninrotramite"
+- context: "renaperToken := context.renaperToken" 
+
+# 1. Definir la URL del endpoint (Se mantiene igual, solo por referencia)
+- context: "renaperGetUrl := 'https://apirenaper.idear.gov.ar/CHUTROFINAL/apidatos/verificaVigencia.php?dni=' + context.dni + '&amp;sexo=' + context.sexo + '&amp;id_tramite=' + context.id_tramite"
+
+# 2. Definir los headers (Se mantiene igual)
+- context: "renaperGetHeaders := {'Authorization': 'Bearer ' + context.renaperToken}"
+
+# 3. Realizar la solicitud GET
+- context: "renaperGetResp := hc.Get(context.renaperGetUrl, context.renaperGetHeaders)"
+
+# 4. Almacenar las variables de la respuesta (Convierte el código a string si lo necesitas)
+- context: "codigoRespuesta := string(context.renaperGetResp.responseBody.codigo)"
+- context: "mensajeRespuesta := context.renaperGetResp.responseBody.mensaje"
+- context: "ejemplarDNI := context.renaperGetResp.responseBody.ejemplar"
+- context: "fallecidoStatus := context.renaperGetResp.responseBody.fallecido"
+
+# 5. Definir la variable 'valid'.
+- context: "isValid := context.mensajeRespuesta == 'DNI VIGENTE'"
+
+# 6. Paso de depuración
+- debug: '"Status HTTP: " + context.renaperGetResp.statusCode + ", Código: " + context.codigoRespuesta + ", Mensaje: " + context.mensajeRespuesta + ", Valido: " + string(context.isValid)'
+
+- debug: '"RESPUESTA RAW: " + jsonToString(context.renaperGetResp.responseBody)'
+
+# 7. Retornar las variables
+- return: &gt;
+    {
+      "codigo": context.codigoRespuesta,
+      "mensaje": context.mensajeRespuesta,
+      "ejemplar": context.ejemplarDNI,
+      "fallecido": context.fallecidoStatus,
+      "isValid": context.isValid
+    }</isv:inputParameter>
+					<isv:outputParameter id="json" name="JSON"/>
+				</isv:inputOutput>
+			</bpmn2:extensionElements>
+			<bpmn2:incoming>Flow_1pycsrf</bpmn2:incoming>
+			<bpmn2:outgoing>Flow_0praell</bpmn2:outgoing>
+		</bpmn2:serviceTask>
+		<bpmn2:exclusiveGateway id="Gateway_1usksf2_customId">
+			<bpmn2:incoming>Flow_0praell</bpmn2:incoming>
+			<bpmn2:outgoing>Flow_14d4jsz</bpmn2:outgoing>
+			<bpmn2:outgoing>Flow_190c1rx</bpmn2:outgoing>
+		</bpmn2:exclusiveGateway>
+		<bpmn2:sequenceFlow id="Flow_0praell" sourceRef="isv_function_1758635546599_customId" targetRef="Gateway_1usksf2_customId"/>
+		<bpmn2:sequenceFlow id="Flow_14d4jsz" sourceRef="Gateway_1usksf2_customId" targetRef="isv_user_form_1758820840999_customId">
+			<bpmn2:extensionElements>
+				<isv:conditionJson>{"type":"basic","condition":[{"@context.isValid@":[{"op":"isTrue","vl":""}]}]}</isv:conditionJson>
+			</bpmn2:extensionElements>
+			<bpmn2:conditionExpression xsi:type="bpmn2:tFormalExpression">${(S(workflow_context).prop("isValid").value()==true)}</bpmn2:conditionExpression>
+		</bpmn2:sequenceFlow>
+		<bpmn2:serviceTask camunda:class="com.ibm.security.access.workflow.camunda.customTaskListener.RenderHTMLTask" id="isv_page_1758637317096_customId" name="NoValido">
+			<bpmn2:extensionElements>
+				<isv:inputOutput>
+					<isv:inputParameter id="themeId" name="themeId">default</isv:inputParameter>
+					<isv:inputParameter id="templatename" name="templateName">custom_page2</isv:inputParameter>
+					<isv:inputParameter id="callback" name="callback"/>
+					<isv:inputParameter id="signal" name="signal"/>
+				</isv:inputOutput>
+			</bpmn2:extensionElements>
+			<bpmn2:incoming>Flow_190c1rx</bpmn2:incoming>
+			<bpmn2:outgoing>Flow_1vv04zs</bpmn2:outgoing>
+		</bpmn2:serviceTask>
+		<bpmn2:sequenceFlow id="Flow_190c1rx" sourceRef="Gateway_1usksf2_customId" targetRef="isv_page_1758637317096_customId">
+			<bpmn2:extensionElements>
+				<isv:conditionJson>{"type":"basic","condition":[{"context.isValidDNI":[{"op":"isFalse","vl":""}]}]}</isv:conditionJson>
+			</bpmn2:extensionElements>
+			<bpmn2:conditionExpression xsi:type="bpmn2:tFormalExpression">${("context.isValidDNI"==false)}</bpmn2:conditionExpression>
+		</bpmn2:sequenceFlow>
+		<bpmn2:sequenceFlow id="Flow_1vv04zs" sourceRef="isv_page_1758637317096_customId" targetRef="Event_0tf1ctn_customId"/>
+		<bpmn2:serviceTask camunda:class="com.ibm.security.access.workflow.camunda.customTaskListener.UserFormsTask" id="isv_user_form_1758717158344_customId" name="Solicita DNI y Tramite">
+			<bpmn2:extensionElements>
+				<isv:inputOutput>
+					<isv:inputParameter id="formId" name="formId">6b7745d4-474a-4999-8766-9c94ac6d874e</isv:inputParameter>
+					<isv:inputParameter id="callback" name="callback">yes</isv:inputParameter>
+					<isv:inputParameter id="signal" name="signal">renaper_dev_01_1758739450881</isv:inputParameter>
+					<isv:outputParameter id="userFormData" name="userFormData"/>
+				</isv:inputOutput>
+			</bpmn2:extensionElements>
+			<bpmn2:incoming>Flow_09k82o1</bpmn2:incoming>
+			<bpmn2:outgoing>Flow_1j8h5i3</bpmn2:outgoing>
+		</bpmn2:serviceTask>
+		<bpmn2:intermediateCatchEvent id="Event_0xnmfxz_customId">
+			<bpmn2:incoming>Flow_1j8h5i3</bpmn2:incoming>
+			<bpmn2:outgoing>Flow_1pycsrf</bpmn2:outgoing>
+			<bpmn2:messageEventDefinition id="autogenerated_isv_user_form_1758717158344_customId" messageRef="Message_1gizf56"/>
+		</bpmn2:intermediateCatchEvent>
+		<bpmn2:sequenceFlow id="Flow_1pycsrf" sourceRef="Event_0xnmfxz_customId" targetRef="isv_function_1758635546599_customId"/>
+		<bpmn2:sequenceFlow id="Flow_1j8h5i3" sourceRef="isv_user_form_1758717158344_customId" targetRef="Event_0xnmfxz_customId"/>
+		<bpmn2:serviceTask camunda:class="com.ibm.security.access.workflow.camunda.customTaskListener.RenderHTMLTask" id="isv_page_1758744425690_customId" name="Page">
+			<bpmn2:extensionElements>
+				<isv:inputOutput>
+					<isv:inputParameter id="themeId" name="themeId">default</isv:inputParameter>
+					<isv:inputParameter id="templatename" name="templateName">custom_page1</isv:inputParameter>
+					<isv:inputParameter id="callback" name="callback">no</isv:inputParameter>
+					<isv:inputParameter id="signal" name="signal"/>
+				</isv:inputOutput>
+			</bpmn2:extensionElements>
+			<bpmn2:incoming>Flow_0arjojm</bpmn2:incoming>
+			<bpmn2:outgoing>Flow_0xwzjpu</bpmn2:outgoing>
+		</bpmn2:serviceTask>
+		<bpmn2:sequenceFlow id="Flow_0xwzjpu" sourceRef="isv_page_1758744425690_customId" targetRef="Event_0tf1ctn_customId"/>
+		<bpmn2:serviceTask camunda:class="com.ibm.security.access.workflow.camunda.customTaskListener.UserFormsTask" id="isv_user_form_1758820840999_customId" name="Captura Imagen">
+			<bpmn2:extensionElements>
+				<isv:inputOutput>
+					<isv:inputParameter id="formId" name="formId">fb584a7f-e1f8-4f0d-99d3-2e91bdca5252</isv:inputParameter>
+					<isv:inputParameter id="callback" name="callback">yes</isv:inputParameter>
+					<isv:inputParameter id="signal" name="signal">renaper_dev_01_1758821285362</isv:inputParameter>
+					<isv:outputParameter id="userFormData" name="userFormData"/>
+				</isv:inputOutput>
+			</bpmn2:extensionElements>
+			<bpmn2:incoming>Flow_14d4jsz</bpmn2:incoming>
+			<bpmn2:outgoing>Flow_1ah75xu</bpmn2:outgoing>
+		</bpmn2:serviceTask>
+		<bpmn2:serviceTask camunda:class="com.ibm.security.access.workflow.camunda.customTaskListener.CustomRuleTask" id="isv_function_1758821022733_customId" name="Valida Foto">
+			<bpmn2:extensionElements>
+				<isv:inputOutput>
+					<isv:inputParameter id="inputData" name="inputData">statements:
+  # 1) URL y Token
+  - context: "renaperfotoUrl := 'https://apirenaper.idear.gov.ar/CHUTROFINAL/ws_imagen_legajoNEC/api_1a1.php'"
+  - context: "renaperToken := context.renaperToken"
+
+  # 2) Variables de entrada
+  - context: "sexo := ctx.userFormData.userData.sexo"
+  - context: "dni := ctx.userFormData.userData.dni"
+  - context: "selfieB64 := ctx.userFormData.userData.selfieB64"
+
+  # 3) Definir los Headers (Authorization + Content-Type: application/json)
+  - context: "renaperHeaders := {'Authorization': 'Bearer ' + context.renaperToken, 'Content-Type': 'application/json'}"
+
+  # 4) Cuerpo JSON como STRING (la que luego vamos a enviar)
+  - context: "renaperBodyString := '{\"foto\":\"' + context.selfieB64 + '\",\"dni\":\"' + context.dni + '\",\"sexo\":\"' + context.sexo + '\"}'"
+
+  # 5) DEBUG DEL PAYLOAD ENVIADO (La línea solicitada)
+  - debug: '"PAYLOAD JSON ENVIADO: " + context.renaperBodyString' 
+
+  # 6) POST a Renaper
+  - context: "renaperPostResp := hc.Post(context.renaperfotoUrl, context.renaperHeaders, context.renaperBodyString)"
+  
+  - context: "esExitoso := context.renaperPostResp.statusCode == '200' &amp;&amp; context.renaperPostResp.responseBody.data.codigo == 200"
+  - context: "score := context.esExitoso ? context.renaperPostResp.responseBody.data.score : 0"
+
+  # 7) Debug de la respuesta
+  - debug: '"Status HTTP de Renaper: " + string(context.renaperPostResp.statusCode)'
+  - debug: '"Respuesta de Renaper RAW: " + jsonToString(context.renaperPostResp.responseBody)'
+  - debug: '"Score extraído: " + string(context.score)'
+
+  # 8) Retorno
+  - return: &gt;
+      {
+        "status": context.renaperPostResp.statusCode,
+        "body": context.renaperPostResp.responseBody,
+        "score": context.score,
+        "mensaje": context.mensajeDetalle
+      }</isv:inputParameter>
+					<isv:outputParameter id="json" name="JSON"/>
+				</isv:inputOutput>
+			</bpmn2:extensionElements>
+			<bpmn2:incoming>Flow_1lq6f8u</bpmn2:incoming>
+			<bpmn2:outgoing>Flow_0bg1u2m</bpmn2:outgoing>
+		</bpmn2:serviceTask>
+		<bpmn2:intermediateCatchEvent id="Event_0d626vx_customId">
+			<bpmn2:incoming>Flow_1ah75xu</bpmn2:incoming>
+			<bpmn2:outgoing>Flow_02ide2m</bpmn2:outgoing>
+			<bpmn2:messageEventDefinition id="autogenerated_isv_user_form_1758820840999_customId" messageRef="Message_1r1qrmh"/>
+		</bpmn2:intermediateCatchEvent>
+		<bpmn2:sequenceFlow id="Flow_1ah75xu" sourceRef="isv_user_form_1758820840999_customId" targetRef="Event_0d626vx_customId"/>
+		<bpmn2:serviceTask camunda:class="com.ibm.security.access.workflow.camunda.customTaskListener.CustomRuleTask" id="isv_function_1759159785794_customId" name="Set Env">
+			<bpmn2:extensionElements>
+				<isv:inputOutput>
+					<isv:inputParameter id="inputData" name="inputData">statements:
+  # 1) Guardo las variables en contexto
+  - context: "renaperValDNIEndpoint := 'https://apirenaper.idear.gov.ar/CHUTROFINAL/apidatos/verificaVigencia.php'"
+  - context: "renaperTokenEndpoint := 'https://apirenaper.idear.gov.ar/CHUTROFINAL/API_ABIS/Autorizacion/token.php'"
+  - context: "renaperUsername := 'OSDE_test'"
+  - context: "renaperPassword := 'LvG4(MmciuZq7I='"
+
+  # 2) Debug de cada valor
+  #- debug: '"renaperValDNIEndpoint: " + string(context.renaperValDNIEndpoint)'
+  #- debug: '"renaperTokenEndpoint: " + string(context.renaperTokenEndpoint)'
+  #- debug: '"renaperUsername: " + string(context.renaperUsername)'
+
+</isv:inputParameter>
+					<isv:outputParameter id="json" name="JSON"/>
+				</isv:inputOutput>
+			</bpmn2:extensionElements>
+			<bpmn2:incoming>Flow_105nefq</bpmn2:incoming>
+			<bpmn2:outgoing>Flow_0kuubmx</bpmn2:outgoing>
+		</bpmn2:serviceTask>
+		<bpmn2:sequenceFlow id="Flow_105nefq" sourceRef="Event_0onayf9" targetRef="isv_function_1759159785794_customId"/>
+		<bpmn2:serviceTask camunda:class="com.ibm.security.access.workflow.camunda.customTaskListener.CustomRuleTask" id="isv_function_1759159819048_customId" name="Get Renaper Token">
+			<bpmn2:extensionElements>
+				<isv:inputOutput>
+					<isv:inputParameter id="inputData" name="inputData">statements:
+#  - context: "renaperToken := 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VySWQiOiI0NDIwIiwidXNlck5hbWUiOiJPU0RFX3Rlc3QiLCJwcm92aW5jaWFJZCI6IjAiLCJuYmYiOjE3NTk4NTAxOTAsImV4cCI6MTc1OTg5MjM5OX0.wgdyr6uqsT71csXTCqcJtdn_fOzgs8XVoBMD6SGJC1E'"
+
+  - context: "renaperTokenEndpoint := 'https://apirenaper.idear.gov.ar/CHUTROFINAL/API_ABIS/Autorizacion/token.php'"
+  - context: "renaperUsername := 'OSDE_test'"
+  - context: "renaperPassword := 'LvG4(MmciuZq7I='"
+  - context: "renaperResp := hc.Post(context.renaperTokenEndpoint, {'Content-Type': 'application/x-www-form-urlencoded'}, 'username=' + context.renaperUsername + '&amp;password=' + context.renaperPassword)"
+  - context: "renaperToken := context.renaperResp.responseBody.data.token"
+  - return: &gt;
+      {
+        "renaperToken": context.renaperToken
+      }</isv:inputParameter>
+					<isv:outputParameter id="json" name="JSON"/>
+				</isv:inputOutput>
+			</bpmn2:extensionElements>
+			<bpmn2:incoming>Flow_0kuubmx</bpmn2:incoming>
+			<bpmn2:outgoing>Flow_09k82o1</bpmn2:outgoing>
+		</bpmn2:serviceTask>
+		<bpmn2:sequenceFlow id="Flow_0kuubmx" sourceRef="isv_function_1759159785794_customId" targetRef="isv_function_1759159819048_customId"/>
+		<bpmn2:sequenceFlow id="Flow_09k82o1" sourceRef="isv_function_1759159819048_customId" targetRef="isv_user_form_1758717158344_customId"/>
+		<bpmn2:exclusiveGateway default="Flow_1lmg1qs" id="Gateway_05veuyn_customId">
+			<bpmn2:incoming>Flow_0bg1u2m</bpmn2:incoming>
+			<bpmn2:outgoing>Flow_0arjojm</bpmn2:outgoing>
+			<bpmn2:outgoing>Flow_1lmg1qs</bpmn2:outgoing>
+		</bpmn2:exclusiveGateway>
+		<bpmn2:sequenceFlow id="Flow_0bg1u2m" sourceRef="isv_function_1758821022733_customId" targetRef="Gateway_05veuyn_customId"/>
+		<bpmn2:sequenceFlow id="Flow_0arjojm" sourceRef="Gateway_05veuyn_customId" targetRef="isv_page_1758744425690_customId">
+			<bpmn2:extensionElements>
+				<isv:conditionJson>{"type":"basic","condition":[{"@context.score@":[{"op":"gt","vl":"60"}]}]}</isv:conditionJson>
+			</bpmn2:extensionElements>
+			<bpmn2:conditionExpression xsi:type="bpmn2:tFormalExpression">${(S(workflow_context).prop("score").value()&gt;60)}</bpmn2:conditionExpression>
+		</bpmn2:sequenceFlow>
+		<bpmn2:serviceTask camunda:class="com.ibm.security.access.workflow.camunda.customTaskListener.RenderHTMLTask" id="isv_page_1759770652863_customId" name="ScoreBajo">
+			<bpmn2:extensionElements>
+				<isv:inputOutput>
+					<isv:inputParameter id="themeId" name="themeId">default</isv:inputParameter>
+					<isv:inputParameter id="templatename" name="templateName">custom_page2</isv:inputParameter>
+					<isv:inputParameter id="callback" name="callback"/>
+					<isv:inputParameter id="signal" name="signal"/>
+				</isv:inputOutput>
+			</bpmn2:extensionElements>
+			<bpmn2:incoming>Flow_1lmg1qs</bpmn2:incoming>
+			<bpmn2:outgoing>Flow_1xdhgn5</bpmn2:outgoing>
+		</bpmn2:serviceTask>
+		<bpmn2:sequenceFlow id="Flow_1lmg1qs" sourceRef="Gateway_05veuyn_customId" targetRef="isv_page_1759770652863_customId"/>
+		<bpmn2:sequenceFlow id="Flow_1xdhgn5" sourceRef="isv_page_1759770652863_customId" targetRef="Event_0tf1ctn_customId"/>
+		<bpmn2:serviceTask camunda:class="com.ibm.security.access.workflow.camunda.customTaskListener.CustomRuleTask" id="isv_function_1759867270762_customId" name="Debug de imagen">
+			<bpmn2:extensionElements>
+				<isv:inputOutput>
+					<isv:inputParameter id="inputData" name="inputData">statements:
+  - debug: '"Valor B64: " + ctx.userFormData.userData.selfieB64'</isv:inputParameter>
+					<isv:outputParameter id="json" name="JSON"/>
+				</isv:inputOutput>
+			</bpmn2:extensionElements>
+			<bpmn2:incoming>Flow_02ide2m</bpmn2:incoming>
+			<bpmn2:outgoing>Flow_1lq6f8u</bpmn2:outgoing>
+		</bpmn2:serviceTask>
+		<bpmn2:sequenceFlow id="Flow_02ide2m" sourceRef="Event_0d626vx_customId" targetRef="isv_function_1759867270762_customId"/>
+		<bpmn2:sequenceFlow id="Flow_1lq6f8u" sourceRef="isv_function_1759867270762_customId" targetRef="isv_function_1758821022733_customId"/>
+	</bpmn2:process>
+	<bpmn2:message id="Message_0knmly8" name="renaper_dev_01_1758634286764"/>
+	<bpmn2:message id="Message_1vuo4i1" name="renaper_dev_01_1758717211899"/>
+	<bpmn2:message id="Message_1gizf56" name="renaper_dev_01_1758739450881"/>
+	<bpmn2:message id="Message_16iagho" name="renaper_dev_01_1758744740017"/>
+	<bpmn2:message id="Message_1x9jroy" name="renaper_dev_01_1758746653938"/>
+	<bpmn2:message id="Message_05k7u9e" name="renaper_dev_01_1758747865041"/>
+	<bpmn2:message id="Message_1r1qrmh" name="renaper_dev_01_1758821285362"/>
+	<bpmndi:BPMNDiagram id="BPMNDiagram_1">
+		<bpmndi:BPMNPlane bpmnElement="renaper_dev_01" id="BPMNPlane_1">
+			<bpmndi:BPMNShape bpmnElement="Event_0onayf9" id="Event_0onayf9_di">
+				<dc:Bounds height="40" width="126" x="300" y="-150"/>
+			</bpmndi:BPMNShape>
+			<bpmndi:BPMNShape bpmnElement="Event_0tf1ctn_customId" id="Event_0tf1ctn_di">
+				<dc:Bounds height="40" width="126" x="300" y="1140"/>
+			</bpmndi:BPMNShape>
+			<bpmndi:BPMNShape bpmnElement="isv_function_1758635546599_customId" id="Activity_1p0qo16_di">
+				<dc:Bounds height="76" width="188" x="269" y="352"/>
+				<bpmndi:BPMNLabel/>
+			</bpmndi:BPMNShape>
+			<bpmndi:BPMNShape bpmnElement="Gateway_1usksf2_customId" id="Gateway_1usksf2_di" isMarkerVisible="true">
+				<dc:Bounds height="50" width="50" x="338" y="465"/>
+			</bpmndi:BPMNShape>
+			<bpmndi:BPMNShape bpmnElement="isv_page_1758637317096_customId" id="Activity_06lrhgh_di">
+				<dc:Bounds height="76" width="188" x="86" y="582"/>
+				<bpmndi:BPMNLabel/>
+			</bpmndi:BPMNShape>
+			<bpmndi:BPMNShape bpmnElement="isv_user_form_1758717158344_customId" id="Activity_1t3yzcl_di">
+				<dc:Bounds height="76" width="188" x="269" y="192"/>
+				<bpmndi:BPMNLabel/>
+			</bpmndi:BPMNShape>
+			<bpmndi:BPMNShape bpmnElement="Event_0xnmfxz_customId" id="Event_0xnmfxz_di">
+				<dc:Bounds height="36" width="36" x="345" y="295"/>
+			</bpmndi:BPMNShape>
+			<bpmndi:BPMNShape bpmnElement="isv_page_1758744425690_customId" id="Activity_1sw6zws_di">
+				<dc:Bounds height="76" width="188" x="826" y="1022"/>
+			</bpmndi:BPMNShape>
+			<bpmndi:BPMNShape bpmnElement="isv_user_form_1758820840999_customId" id="Activity_1bvwcij_di">
+				<dc:Bounds height="76" width="188" x="516" y="532"/>
+				<bpmndi:BPMNLabel/>
+			</bpmndi:BPMNShape>
+			<bpmndi:BPMNShape bpmnElement="isv_function_1758821022733_customId" id="Activity_040nexb_di">
+				<dc:Bounds height="76" width="188" x="516" y="822"/>
+				<bpmndi:BPMNLabel/>
+			</bpmndi:BPMNShape>
+			<bpmndi:BPMNShape bpmnElement="Event_0d626vx_customId" id="Event_0d626vx_di">
+				<dc:Bounds height="36" width="36" x="592" y="635"/>
+			</bpmndi:BPMNShape>
+			<bpmndi:BPMNShape bpmnElement="isv_function_1759159785794_customId" id="Activity_1ehwbx8_di">
+				<dc:Bounds height="76" width="188" x="269" y="-78"/>
+				<bpmndi:BPMNLabel/>
+			</bpmndi:BPMNShape>
+			<bpmndi:BPMNShape bpmnElement="isv_function_1759159819048_customId" id="Activity_10a3791_di">
+				<dc:Bounds height="76" width="188" x="269" y="52"/>
+				<bpmndi:BPMNLabel/>
+			</bpmndi:BPMNShape>
+			<bpmndi:BPMNShape bpmnElement="Gateway_05veuyn_customId" id="Gateway_05veuyn_di" isMarkerVisible="true">
+				<dc:Bounds height="50" width="50" x="585" y="935"/>
+			</bpmndi:BPMNShape>
+			<bpmndi:BPMNShape bpmnElement="isv_page_1759770652863_customId" id="Activity_1sa2c23_di">
+				<dc:Bounds height="76" width="188" x="516" y="1022"/>
+				<bpmndi:BPMNLabel/>
+			</bpmndi:BPMNShape>
+			<bpmndi:BPMNShape bpmnElement="isv_function_1759867270762_customId" id="Activity_126wswa_di">
+				<dc:Bounds height="76" width="188" x="516" y="692"/>
+				<bpmndi:BPMNLabel/>
+			</bpmndi:BPMNShape>
+			<bpmndi:BPMNEdge bpmnElement="Flow_0praell" id="Flow_0praell_di">
+				<di:waypoint x="363" y="428"/>
+				<di:waypoint x="363" y="465"/>
+			</bpmndi:BPMNEdge>
+			<bpmndi:BPMNEdge bpmnElement="Flow_14d4jsz" id="Flow_14d4jsz_di">
+				<di:waypoint x="363" y="515"/>
+				<di:waypoint x="363" y="542"/>
+				<di:waypoint x="516" y="542"/>
+			</bpmndi:BPMNEdge>
+			<bpmndi:BPMNEdge bpmnElement="Flow_190c1rx" id="Flow_190c1rx_di">
+				<di:waypoint x="363" y="515"/>
+				<di:waypoint x="363" y="592"/>
+				<di:waypoint x="274" y="592"/>
+			</bpmndi:BPMNEdge>
+			<bpmndi:BPMNEdge bpmnElement="Flow_1vv04zs" id="Flow_1vv04zs_di">
+				<di:waypoint x="274" y="620"/>
+				<di:waypoint x="363" y="620"/>
+				<di:waypoint x="363" y="1140"/>
+			</bpmndi:BPMNEdge>
+			<bpmndi:BPMNEdge bpmnElement="Flow_1pycsrf" id="Flow_1pycsrf_di">
+				<di:waypoint x="363" y="331"/>
+				<di:waypoint x="363" y="352"/>
+			</bpmndi:BPMNEdge>
+			<bpmndi:BPMNEdge bpmnElement="Flow_1j8h5i3" id="Flow_1j8h5i3_di">
+				<di:waypoint x="363" y="268"/>
+				<di:waypoint x="363" y="295"/>
+			</bpmndi:BPMNEdge>
+			<bpmndi:BPMNEdge bpmnElement="Flow_0xwzjpu" id="Flow_0xwzjpu_di">
+				<di:waypoint x="920" y="1098"/>
+				<di:waypoint x="920" y="1160"/>
+				<di:waypoint x="426" y="1160"/>
+			</bpmndi:BPMNEdge>
+			<bpmndi:BPMNEdge bpmnElement="Flow_1ah75xu" id="Flow_1ah75xu_di">
+				<di:waypoint x="610" y="608"/>
+				<di:waypoint x="610" y="635"/>
+			</bpmndi:BPMNEdge>
+			<bpmndi:BPMNEdge bpmnElement="Flow_105nefq" id="Flow_105nefq_di">
+				<di:waypoint x="363" y="-110"/>
+				<di:waypoint x="363" y="-78"/>
+			</bpmndi:BPMNEdge>
+			<bpmndi:BPMNEdge bpmnElement="Flow_0kuubmx" id="Flow_0kuubmx_di">
+				<di:waypoint x="363" y="-2"/>
+				<di:waypoint x="363" y="52"/>
+			</bpmndi:BPMNEdge>
+			<bpmndi:BPMNEdge bpmnElement="Flow_09k82o1" id="Flow_09k82o1_di">
+				<di:waypoint x="363" y="128"/>
+				<di:waypoint x="363" y="192"/>
+			</bpmndi:BPMNEdge>
+			<bpmndi:BPMNEdge bpmnElement="Flow_0bg1u2m" id="Flow_0bg1u2m_di">
+				<di:waypoint x="610" y="898"/>
+				<di:waypoint x="610" y="935"/>
+			</bpmndi:BPMNEdge>
+			<bpmndi:BPMNEdge bpmnElement="Flow_0arjojm" id="Flow_0arjojm_di">
+				<di:waypoint x="635" y="960"/>
+				<di:waypoint x="920" y="960"/>
+				<di:waypoint x="920" y="1022"/>
+			</bpmndi:BPMNEdge>
+			<bpmndi:BPMNEdge bpmnElement="Flow_1lmg1qs" id="Flow_1lmg1qs_di">
+				<di:waypoint x="610" y="985"/>
+				<di:waypoint x="610" y="1022"/>
+			</bpmndi:BPMNEdge>
+			<bpmndi:BPMNEdge bpmnElement="Flow_1xdhgn5" id="Flow_1xdhgn5_di">
+				<di:waypoint x="516" y="1060"/>
+				<di:waypoint x="470" y="1060"/>
+				<di:waypoint x="470" y="1160"/>
+				<di:waypoint x="426" y="1160"/>
+			</bpmndi:BPMNEdge>
+			<bpmndi:BPMNEdge bpmnElement="Flow_02ide2m" id="Flow_02ide2m_di">
+				<di:waypoint x="610" y="671"/>
+				<di:waypoint x="610" y="692"/>
+			</bpmndi:BPMNEdge>
+			<bpmndi:BPMNEdge bpmnElement="Flow_1lq6f8u" id="Flow_1lq6f8u_di">
+				<di:waypoint x="610" y="768"/>
+				<di:waypoint x="610" y="822"/>
+			</bpmndi:BPMNEdge>
+		</bpmndi:BPMNPlane>
+	</bpmndi:BPMNDiagram>
+</bpmn2:definitions>
