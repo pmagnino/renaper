@@ -1,0 +1,40 @@
+statements:
+
+- context: "dni := '31641173'"
+- context: "sexo := 'M'"
+- context: "id_tramite := '00087367237'"
+- context: "renaperToken := 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VySWQiOiI0NDIwIiwidXNlck5hbWUiOiJPU0RFX3Rlc3QiLCJwcm92aW5jaWFJZCI6IjAiLCJuYmYiOjE3NjExNDA1NjIsImV4cCI6MTc2MTE4ODM5OX0._DSbayWq83CB8jJ2M3u4zo-bCXHD0y7CQ8jUWgS29Rg'"
+ 
+
+# 1. Definir la URL del endpoint (Se mantiene igual, solo por referencia)
+- context: "renaperGetUrl := 'https://apirenaper.idear.gov.ar/CHUTROFINAL/apidatos/verificaVigencia.php?dni=' + context.dni + '&sexo=' + context.sexo + '&id_tramite=' + context.id_tramite"
+
+# 2. Definir los headers (Se mantiene igual)
+- context: "renaperGetHeaders := {'Authorization': 'Bearer ' + context.renaperToken}"
+
+# 3. Realizar la solicitud GET
+- context: "renaperGetResp := hc.Get(context.renaperGetUrl, context.renaperGetHeaders)"
+
+# 4. Almacenar las variables de la respuesta (Convierte el código a string si lo necesitas)
+- context: "codigoRespuesta := string(context.renaperGetResp.responseBody.codigo)"
+- context: "mensajeRespuesta := context.renaperGetResp.responseBody.mensaje"
+- context: "ejemplarDNI := context.renaperGetResp.responseBody.ejemplar"
+- context: "fallecidoStatus := context.renaperGetResp.responseBody.fallecido"
+
+# 5. Definir la variable 'valid'.
+- context: "isValid := context.mensajeRespuesta == 'DNI VIGENTE'"
+
+# 6. Paso de depuración
+- debug: '"Status HTTP: " + context.renaperGetResp.statusCode + ", Código: " + context.codigoRespuesta + ", Mensaje: " + context.mensajeRespuesta + ", Valido: " + string(context.isValid)'
+
+- debug: '"RESPUESTA RAW: " + string(context.renaperGetResp.responseBody)'
+
+# 7. Retornar las variables
+- return: >
+    {
+      "codigo": context.codigoRespuesta,
+      "mensaje": context.mensajeRespuesta,
+      "ejemplar": context.ejemplarDNI,
+      "fallecido": context.fallecidoStatus,
+      "isValid": context.isValid
+    }
