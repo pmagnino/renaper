@@ -26,7 +26,7 @@ statements:
 # 6. Paso de depuración
 - debug: '"Status HTTP: " + context.renaperGetResp.statusCode + ", Código: " + context.codigoRespuesta + ", Mensaje: " + context.mensajeRespuesta + ", Valido: " + string(context.isValid)'
 
-- debug: '"RESPUESTA RAW: " + string(context.renaperGetResp.responseBody)'
+- debug: '"RESPUESTA RAW: " + jsonToString(context.renaperGetResp.responseBody)'
 
 # 7. Retornar las variables
 - return: >
