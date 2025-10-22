@@ -1,0 +1,36 @@
+statements:
+  # 1) URL del webhook
+  #- context: "slackWebhookUrl := 'https://webhook.site/194ae9fb-d589-416a-a6e1-769a0eaad239'"
+  - context: "renaperfotoUrl := 'https://apirenaper.idear.gov.ar/CHUTROFINAL/API_ABIS/Autorizacion/token.php'"
+  - context: "renaperToken := context.renaperToken"
+
+
+  # 2) Variables de prueba
+  - context: "sexo := ctx.userFormData.userData.sexo"
+  - context: "dni := ctx.userFormData.userData.dni"
+  - context: "selfieB64 := ctx.userFormData.userData.selfieB64"
+
+  # 3) Headers
+  #- context: "slackHeaders := {'Content-Type': 'application/json'}"
+  
+    # 4. Definir los Headers
+  #    Usaremos Content-Type URL-encoded para coincidir con el body string.
+  - context: "slackHeaders := {'Authorization': 'Bearer ' + context.renaperToken, 'Content-Type': 'application/x-www-form-urlencoded'}"
+
+  # 4) Cuerpo JSON como STRING (la que luego vamos a enviar)
+  - context: "slackBodyString := '{\"foto\":\"' + context.selfieB64 + '\",\"dni\":\"' + context.dni + '\",\"sexo\":\"' + context.sexo + '\"}'"
+
+  # 5) POST (ahora sí, usando slackBodyString que SÍ existe)
+  - context: "slackPostResp := hc.Post(context.renaperfotoUrl, context.slackHeaders, context.slackBodyString)"
+
+  # 6) Debug
+  - debug: '"Status HTTP de Slack: " + string(context.slackPostResp.statusCode)'
+  - debug: '"Respuesta de Slack: " + jsonToString(context.slackPostResp.responseBody)'
+
+
+  # 7) Retorno (opcional, simple)
+  - return: >
+      {
+        "status": context.slackPostResp.statusCode,
+        "body": context.slackPostResp.responseBody
+      }
