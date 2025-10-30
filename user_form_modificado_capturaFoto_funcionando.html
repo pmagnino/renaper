@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<base href="/" />
+		<meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+		<link rel="shortcut icon" type="image/x-icon" href="/ui/assets/img/favicon.ico" />
+		
+		<!-- Do not remove, Carbon style is used as base -->
+		<link rel="stylesheet" href="/profile/static/carbon-components.min.css">
+		<link rel="stylesheet" href="/profile/static/userform.css?version=@USER_FORM_VERSION@">
+		<!---->
+		
+		<!-- Optionally override carbon styles using the common theme.css (common/page_components/default/page_style.css in Theme files) -->
+		<link rel="stylesheet" href="/template/v1.0/static/theme.css?themeId=@THEME_ID@" />
+		<!---->
+
+		<title>@USER_FORM_TITLE@</title>
+	</head>
+
+	<body class="userform-@FLOW_URL_NAME@">
+		<div class="userform-container">
+
+			<!-- Do not remove the USER_FORM_FORM macro; form elements are generated and placed there. -->
+			<div class="userform">
+				@PAGE_HEADER@
+				@USER_FORM_FORM@
+			</div>
+			<!---->
+		<div style="display:grid;gap:12px;max-width:640px">
+  <video id="cam" autoplay playsinline style="width:600px;height:720px;object-fit:cover;border:1px solid #ccc;border-radius:8px"></video>
+  <canvas id="cv" width="600" height="720" style="display:none"></canvas>
+
+    <input type="hidden" name="selfieB64" id="selfieB64">
+    <div style="display:flex;gap:8px">
+      <button type="button" id="btnCap">Capturar</button>
+    </div>
+</div>
+
+<script>
+(async () => {
+  const video = document.getElementById('cam');
+  const canvas = document.getElementById('cv');
+  const ctx = canvas.getContext('2d');
+  const btnCap = document.getElementById('btnCap');
+  const btnNext = document.getElementById('btnNext');
+  var hid = document.getElementById('selfieB64');
+
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { width: 600, height: 720, facingMode: 'user' },
+      audio: false
+    });
+    video.srcObject = stream;
+  } catch (e) {
+    alert('No se puede acceder a la cámara: ' + e.message);
+  }
+
+  btnCap.addEventListener('click', () => {
+    ctx.drawImage(video, 0, 0, 600, 720);
+    // dataURL -> "data:image/jpeg;base64,...."
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+    // si querés solo el payload base64 sin el prefijo:
+    const b64 = dataUrl.split(',')[1];
+    hid.value = b64;               // guarda en el campo oculto
+	v=document.getElementById('element-0-text-input');
+	v.value=b64; 
+    btnNext.disabled = false;      // habilita continuar
+  });
+})();
+</script>
+			@PAGE_FOOTER@
+		</div>
+
+		<!-- Loading overlay when form is submitted -->
+		<div id="loader" class="bx--loading-overlay">
+			<div data-loading class="bx--loading">
+				<svg class="bx--loading__svg" viewBox="-75 -75 150 150">
+					<title>Loading</title>
+					<circle class="bx--loading__stroke" cx="0" cy="0" r="37.5" />
+				</svg>
+			</div>
+		</div>
+		<!---->
+
+		<!-- Do not remove, functionality of form will be lost -->
+		<script type="text/javascript" src="/profile/static/carbon-components.min.js"></script>
+		<script type="text/javascript" src="/profile/static/userform.js?version=@USER_FORM_VERSION@"></script>
+		<script type="text/javascript" src="/usc/js/ieCheck.js"></script>
+		<!---->
+	</body>
+</html>
